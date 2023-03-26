@@ -1,0 +1,42 @@
+import numpy as np
+import pandas as pd
+
+df_ma = pd.read_csv(r'E:\Документы\Visa Mastercard\MA.csv', index_col = 'Дата')
+df_v = pd.read_csv(r'E:\Документы\Visa Mastercard\V.csv', index_col = 'Дата')
+
+#print(df_v)
+
+for i in range(len(df_ma)):
+    for col in df_ma.columns:
+        if col == 'Объём' or col == 'Изм. %':
+            df_ma[col][i] = df_ma[col][i][:-1].replace('.','').replace(',','.')
+            df_v[col][i] = df_v[col][i][:-1].replace('.','').replace(',','.')
+        else:
+            df_ma[col][i] = df_ma[col][i].replace('.','').replace(',','.')
+            df_v[col][i] = df_v[col][i].replace('.','').replace(',','.')
+df_ma = df_ma.apply(pd.to_numeric)
+df_v = df_v.apply(pd.to_numeric)
+
+#print(df_ma.corrwith(df_v))
+
+
+df_ma.loc['07.02.2022'] = None
+#print(df_ma.loc['07.02.2022'])
+
+ #Вывод восстановленных данных используя виндзорирование
+from scipy.stats.mstats import winsorize
+for col in df_ma.columns:
+    missing_value = winsorize(np.ma.masked_invalid(df_ma[col]), limits=(0.25, 0.25))[3]
+    print(f'{col} : {missing_value}')
+
+#Вывод восстановленных данных используя линейную аппроксимацию
+for col in df_ma.columns:
+    missing_value = df_ma[col].interpolate()[3]
+    print(f'{col} : {missing_value}')
+
+    # Вывод восстановленных данных используя корреляционное восстановление
+    for col in df_ma.columns:
+        missing_value = (df_v.loc['07.02.2022'][col] / df_v.loc['07.02.2022'][col]) * df_ma.loc['07.02.2022'][col]
+        print(f'{col} : {missing_value}')
+
+#print(df_ma)
